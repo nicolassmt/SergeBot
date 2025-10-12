@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import os
-from flask import Flask
 import threading
 
 print("🚀 Démarrage du bot Serge...")
