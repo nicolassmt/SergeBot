@@ -1,11 +1,21 @@
-import os
 import discord
 from discord.ext import commands
-import json
+import os
 
-# Charger la configuration depuis config.json
-with open("config.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
+print("🚀 Démarrage du bot Serge...")
+
+config = {
+    "TOKEN": os.getenv("DISCORD_TOKEN"),
+    "AUTHORIZED_ROLE_IDS": [1370723124865400902, 1370671598901788713],
+    "SERGE_AVATAR_URL": "https://www.hebergeur-image.fr/uploads/20251011/9858ca780a9a005b8781f863e3dcb2150da21755.png",
+    "SERGE_NAME": "Serge",
+    "prefix": "!"
+}
+
+if not config["TOKEN"]:
+    print("❌ ERREUR : Aucun token trouvé dans les variables d'environnement (DISCORD_TOKEN).")
+    print("⚠️ Vérifie dans Render > Environment que la variable DISCORD_TOKEN est bien définie.")
+    exit()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -25,7 +35,6 @@ async def serge(ctx, *, message: str):
     except discord.Forbidden:
         pass
 
-    # Crée un webhook pour que le message paraisse venir de Serge
     webhook = await ctx.channel.create_webhook(name=config["SERGE_NAME"])
     await webhook.send(
         content=message,
@@ -34,5 +43,5 @@ async def serge(ctx, *, message: str):
     )
     await webhook.delete()
 
-# --- GESTION DU TOKEN SÉCURISÉ ---
-# On essaye d'abord de le récup
+print("⚙️ Lancement du bot...")
+bot.run(config["TOKEN"])
