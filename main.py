@@ -65,4 +65,11 @@ async def serge(ctx, *, message: str):
 # === LANCEMENT ===
 keep_alive()
 print("⚙️ Lancement du bot...")
-bot.run(config["TOKEN"])
+
+try:
+    bot.run(config["TOKEN"])
+except Exception as e:
+    print(f"❌ ERREUR LORS DU LANCEMENT DU BOT : {e}")
+finally:
+    print("🛑 Le bot Serge s'est arrêté.")
+
