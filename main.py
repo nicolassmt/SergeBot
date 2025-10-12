@@ -1,50 +1,38 @@
+import os
 import discord
-from discord import app_commands
+from discord.ext import commands
 import json
 
-# Chargement du fichier config.json
-with open("config.json", "r") as f:
+# Charger la configuration depuis config.json
+with open("config.json", "r", encoding="utf-8") as f:
     config = json.load(f)
-
-TOKEN = config["TOKEN"]
-AUTHORIZED_ROLE_IDS = config["AUTHORIZED_ROLE_IDS"]
-SERGE_AVATAR_URL = config["SERGE_AVATAR_URL"]
-SERGE_NAME = config.get("SERGE_NAME", "Serge")
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = discord.Client(intents=intents)
-tree = app_commands.CommandTree(bot)
+
+bot = commands.Bot(command_prefix=config["prefix"], intents=intents)
 
 @bot.event
 async def on_ready():
-    await tree.sync()
-    print(f"✅ Serge est prêt à parler sur {len(bot.guilds)} serveur(s)")
+    print(f"✅ Serge est en ligne sous le nom {bot.user} !")
 
-@tree.command(name="serge", description="Fait parler Serge dans ce salon (avec avatar).")
-async def serge(interaction: discord.Interaction, message: str):
-    user_roles = [role.id for role in interaction.user.roles]
-    if not any(role_id in user_roles for role_id in AUTHORIZED_ROLE_IDS):
-        await interaction.response.send_message(
-            "⛔ T’as pas l’droit d’parler pour moi, étranger.",
-            ephemeral=True
-        )
-        return
+@bot.command()
+@commands.has_any_role(*config["AUTHORIZED_ROLE_IDS"])
+async def serge(ctx, *, message: str):
+    """Remplace ton message par celui de Serge"""
+    try:
+        await ctx.message.delete()
+    except discord.Forbidden:
+        pass
 
-    # Vérifie ou crée un webhook dans le salon
-    webhooks = await interaction.channel.webhooks()
-    serge_webhook = discord.utils.get(webhooks, name=SERGE_NAME)
-
-    if not serge_webhook:
-        serge_webhook = await interaction.channel.create_webhook(name=SERGE_NAME, avatar=None)
-
-    # Envoie le message en utilisant le webhook (apparence d'un joueur)
-    await serge_webhook.send(
-        content=f"**{SERGE_NAME} :** {message}",
-        username=SERGE_NAME,
-        avatar_url=SERGE_AVATAR_URL
+    # Crée un webhook pour que le message paraisse venir de Serge
+    webhook = await ctx.channel.create_webhook(name=config["SERGE_NAME"])
+    await webhook.send(
+        content=message,
+        username=config["SERGE_NAME"],
+        avatar_url=config["SERGE_AVATAR_URL"]
     )
+    await webhook.delete()
 
-    await interaction.response.send_message("✅ Serge a parlé.", ephemeral=True)
-
-bot.run(TOKEN)
+# --- GESTION DU TOKEN SÉCURISÉ ---
+# On essaye d'abord de le récup
