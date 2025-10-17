@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import threading
-from flask import Flask  # <-- ✅ LIGNE MANQUANTE
+from flask import Flask
 
 print("🚀 Démarrage du bot Serge...")
 
@@ -20,15 +20,20 @@ if not config["TOKEN"]:
     print("⚠️ Vérifie dans Render > Environment que la variable DISCORD_TOKEN est bien définie.")
     exit()
 
-# === KEEP-ALIVE (pour UptimeRobot) ===
-app = Flask('')
+# === FLASK KEEP-ALIVE (pour Render & UptimeRobot) ===
+app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "🌊 Serge veille toujours sur le lac..."
 
+@app.route('/ping')
+def ping():
+    return "pong", 200
+
 def run():
-    app.run(host='0.0.0.0', port=8080)
+    port = int(os.environ.get("PORT", 8080))  # ✅ port dynamique pour Render
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
     thread = threading.Thread(target=run)
@@ -72,4 +77,3 @@ except Exception as e:
     print(f"❌ ERREUR LORS DU LANCEMENT DU BOT : {e}")
 finally:
     print("🛑 Le bot Serge s'est arrêté.")
-
