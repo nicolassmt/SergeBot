@@ -55,9 +55,9 @@ async def on_ready():
 async def serge(ctx, *, message: str):
     """Remplace ton message par celui de Serge"""
     try:
-        await ctx.message.delete()
-    except discord.Forbidden:
-        pass
+    await ctx.message.delete()
+except (discord.Forbidden, discord.NotFound):
+    pass
 
     webhook = await ctx.channel.create_webhook(name=config["SERGE_NAME"])
     await webhook.send(
