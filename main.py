@@ -10,7 +10,7 @@ print("🚀 Démarrage du bot Serge...")
 config = {
     "TOKEN": os.getenv("DISCORD_TOKEN"),
     "AUTHORIZED_ROLE_IDS": [1370723124865400902, 1370671598901788713],
-    "SERGE_AVATAR_URL": "https://www.hebergeur-image.fr/uploads/20251011/9858ca780a9a005b8781f863e3dcb2150da21755.png",
+    "SERGE_AVATAR_URL": "https://raw.githubusercontent.com/nicolassmt/SergeBot/main/assets/serge.png",
     "SERGE_NAME": "Serge",
     "prefix": "!"
 }
