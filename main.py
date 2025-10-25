@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import threading
-from flask import Flask
+from flask import Flask  # ✅ Nécessaire pour le keep-alive
 
 print("🚀 Démarrage du bot Serge...")
 
@@ -20,20 +20,16 @@ if not config["TOKEN"]:
     print("⚠️ Vérifie dans Render > Environment que la variable DISCORD_TOKEN est bien définie.")
     exit()
 
-# === FLASK KEEP-ALIVE (pour Render & UptimeRobot) ===
+# === KEEP-ALIVE (pour UptimeRobot) ===
 app = Flask(__name__)
 
 @app.route('/')
 def home():
+    print("📡 Ping reçu — UptimeRobot a vérifié la présence de Serge.")
     return "🌊 Serge veille toujours sur le lac..."
 
-@app.route('/ping')
-def ping():
-    return "pong", 200
-
 def run():
-    port = int(os.environ.get("PORT", 8080))  # ✅ port dynamique pour Render
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=10000)
 
 def keep_alive():
     thread = threading.Thread(target=run)
@@ -56,7 +52,7 @@ async def serge(ctx, *, message: str):
     """Remplace ton message par celui de Serge"""
     try:
         await ctx.message.delete()
-    except (discord.Forbidden, discord.NotFound):
+    except discord.Forbidden:
         pass
 
     webhook = await ctx.channel.create_webhook(name=config["SERGE_NAME"])
@@ -70,10 +66,4 @@ async def serge(ctx, *, message: str):
 # === LANCEMENT ===
 keep_alive()
 print("⚙️ Lancement du bot...")
-
-try:
-    bot.run(config["TOKEN"])
-except Exception as e:
-    print(f"❌ ERREUR LORS DU LANCEMENT DU BOT : {e}")
-finally:
-    print("🛑 Le bot Serge s'est arrêté.")
+bot.run(config["TOKEN"])
