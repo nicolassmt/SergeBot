@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import threading
-from flask import Flask  # ✅ Nécessaire pour le keep-alive
+from flask import Flask  # Pour le keep-alive
 
 print("🚀 Démarrage du bot Serge...")
 
@@ -12,7 +12,8 @@ config = {
     "AUTHORIZED_ROLE_IDS": [1370723124865400902, 1370671598901788713],
     "SERGE_AVATAR_URL": "https://raw.githubusercontent.com/nicolassmt/SergeBot/main/assets/serge.png",
     "SERGE_NAME": "Serge",
-    "prefix": "!"
+    "prefix": "!",
+    "ALERT_CHANNEL_ID": 1431652316255359006  # ⚠️ Mets ici l’ID du salon Discord où Serge doit annoncer son retour
 }
 
 if not config["TOKEN"]:
@@ -45,6 +46,17 @@ bot = commands.Bot(command_prefix=config["prefix"], intents=intents)
 async def on_ready():
     print(f"✅ Serge est en ligne sous le nom {bot.user} !")
     await bot.change_presence(activity=discord.Game("au bord du lac... 🌊"))
+
+    # 🔔 Envoie un message dans le salon d’alerte si configuré
+    alert_channel_id = config.get("ALERT_CHANNEL_ID")
+    if alert_channel_id:
+        channel = bot.get_channel(alert_channel_id)
+        if channel:
+            try:
+                await channel.send("🌊 **Serge est de retour sur le lac !** *(reconnexion automatique)*")
+                print(f"📨 Message de retour envoyé dans le salon ID {alert_channel_id}.")
+            except Exception as e:
+                print(f"⚠️ Impossible d’envoyer le message d’alerte : {e}")
 
 @bot.command()
 @commands.has_any_role(*config["AUTHORIZED_ROLE_IDS"])
