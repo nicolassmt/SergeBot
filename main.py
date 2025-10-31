@@ -2,7 +2,8 @@ import discord
 from discord.ext import commands
 import os
 import threading
-from flask import Flask  # Pour le keep-alive
+import asyncio
+from flask import Flask
 
 print("🚀 Démarrage du bot Serge...")
 
@@ -12,8 +13,7 @@ config = {
     "AUTHORIZED_ROLE_IDS": [1370723124865400902, 1370671598901788713],
     "SERGE_AVATAR_URL": "https://raw.githubusercontent.com/nicolassmt/SergeBot/main/assets/serge.png",
     "SERGE_NAME": "Serge",
-    "prefix": "!",
-    "ALERT_CHANNEL_ID": 1431652316255359006  # ⚠️ Mets ici l’ID du salon Discord où Serge doit annoncer son retour
+    "prefix": "!"
 }
 
 if not config["TOKEN"]:
@@ -26,11 +26,10 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    print("📡 Ping reçu — UptimeRobot a vérifié la présence de Serge.")
     return "🌊 Serge veille toujours sur le lac..."
 
 def run():
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
     thread = threading.Thread(target=run)
@@ -47,32 +46,32 @@ async def on_ready():
     print(f"✅ Serge est en ligne sous le nom {bot.user} !")
     await bot.change_presence(activity=discord.Game("au bord du lac... 🌊"))
 
-    # 🔔 Envoie un message dans le salon d’alerte si configuré
-    alert_channel_id = config.get("ALERT_CHANNEL_ID")
-    if alert_channel_id:
-        channel = bot.get_channel(alert_channel_id)
-        if channel:
-            try:
-                await channel.send("🌊 **Serge est de retour sur le lac !** *(reconnexion automatique)*")
-                print(f"📨 Message de retour envoyé dans le salon ID {alert_channel_id}.")
-            except Exception as e:
-                print(f"⚠️ Impossible d’envoyer le message d’alerte : {e}")
-
+# === COMMANDE SERGE (mode RP progressif) ===
 @bot.command()
 @commands.has_any_role(*config["AUTHORIZED_ROLE_IDS"])
 async def serge(ctx, *, message: str):
-    """Remplace ton message par celui de Serge"""
+    """Fait parler Serge avec un envoi progressif (bloc par bloc)"""
     try:
         await ctx.message.delete()
     except discord.Forbidden:
         pass
 
+    # Découpe le message en phrases séparées par des points ou des sauts de ligne
+    blocks = [block.strip() for block in message.replace("\n", ". ").split(". ") if block.strip()]
+
+    # Crée un webhook temporaire
     webhook = await ctx.channel.create_webhook(name=config["SERGE_NAME"])
-    await webhook.send(
-        content=message,
-        username=config["SERGE_NAME"],
-        avatar_url=config["SERGE_AVATAR_URL"]
-    )
+
+    # Envoi progressif des blocs
+    for block in blocks:
+        await webhook.send(
+            content=block,
+            username=config["SERGE_NAME"],
+            avatar_url=config["SERGE_AVATAR_URL"]
+        )
+        await asyncio.sleep(2)  # ⏳ délai entre chaque phrase
+
+    # Supprime le webhook après usage
     await webhook.delete()
 
 # === LANCEMENT ===
