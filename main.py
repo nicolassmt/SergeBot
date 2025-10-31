@@ -82,3 +82,4 @@ async def serge(ctx, *, message: str):
 keep_alive()
 print("⚙️ Lancement du bot...")
 bot.run(config["TOKEN"])
+
