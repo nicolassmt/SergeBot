@@ -1,80 +1,64 @@
-import discord
-from discord.ext import commands
 import os
-import threading
 import asyncio
 from flask import Flask
+import threading
+import discord
+from discord.ext import commands
 
-print("🚀 Démarrage du bot Serge...")
-
-# === CONFIGURATION ===
-config = {
-    "TOKEN": os.getenv("DISCORD_TOKEN"),
-    "AUTHORIZED_ROLE_IDS": [1370723124865400902, 1370671598901788713],
-    "SERGE_AVATAR_URL": "https://raw.githubusercontent.com/nicolassmt/SergeBot/main/assets/serge.png",
-    "SERGE_NAME": "Serge",
-    "prefix": "!"
-}
-
-if not config["TOKEN"]:
-    print("❌ ERREUR : Aucun token trouvé dans les variables d'environnement (DISCORD_TOKEN).")
-    print("⚠️ Vérifie dans Render > Environment que la variable DISCORD_TOKEN est bien définie.")
-    exit()
-
-# === KEEP-ALIVE (pour UptimeRobot) ===
+# === Flask app pour UptimeRobot ===
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "🌊 Serge veille toujours sur le lac..."
+    return "Serge est en ligne."
 
 def run():
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
 
 def keep_alive():
-    thread = threading.Thread(target=run)
-    thread.start()
+    t = threading.Thread(target=run)
+    t.start()
 
-# === DISCORD BOT ===
+# === Discord bot ===
 intents = discord.Intents.default()
+intents.messages = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix=config["prefix"], intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"✅ Serge est en ligne sous le nom {bot.user} !")
-    await bot.change_presence(activity=discord.Game("au bord du lac... 🌊"))
+    print("🚀 Démarrage du bot Serge...")
+    print("⚙️ Lancement du bot...")
+    print(f"✅ Connecté en tant que {bot.user}")
 
-# === COMMANDE SERGE (mode RP progressif) ===
+# === Commande principale : effet d’écriture progressive ===
 @bot.command()
-@commands.has_any_role(*config["AUTHORIZED_ROLE_IDS"])
 async def serge(ctx, *, message: str):
-    """Fait parler Serge avec un envoi progressif (bloc par bloc)"""
+    # On tente de supprimer le message de commande pour garder la propreté
     try:
         await ctx.message.delete()
-    except discord.Forbidden:
+    except Exception:
         pass
 
-    # Découpe le message en phrases séparées par des points ou des sauts de ligne
-    blocks = [block.strip() for block in message.replace("\n", ". ").split(". ") if block.strip()]
+    # On envoie un message vide pour commencer la "rédaction progressive"
+    msg = await ctx.send("…")
 
-    # Crée un webhook temporaire
-    webhook = await ctx.channel.create_webhook(name=config["SERGE_NAME"])
+    # Découpe le texte en blocs
+    words = message.split(" ")
+    display = ""
+    step = 5   # Nombre de mots par bloc
+    delay = 0.5  # Délai entre chaque bloc
 
-    # Envoi progressif des blocs
-    for block in blocks:
-        await webhook.send(
-            content=block,
-            username=config["SERGE_NAME"],
-            avatar_url=config["SERGE_AVATAR_URL"]
-        )
-        await asyncio.sleep(2)  # ⏳ délai entre chaque phrase
+    for i in range(0, len(words), step):
+        display += " ".join(words[i:i + step]) + " "
+        await msg.edit(content=display.strip())
+        await asyncio.sleep(delay)
 
-    # Supprime le webhook après usage
-    await webhook.delete()
+    # Petit effet final
+    await asyncio.sleep(1)
+    await msg.edit(content=display.strip() + " ░")
 
-# === LANCEMENT ===
+# === Lancement ===
 keep_alive()
-print("⚙️ Lancement du bot...")
-bot.run(config["TOKEN"])
+bot.run(os.getenv("DISCORD_TOKEN"))
