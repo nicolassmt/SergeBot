@@ -35,29 +35,33 @@ async def on_ready():
 # === Commande principale : effet d’écriture progressive ===
 @bot.command()
 async def serge(ctx, *, message: str):
-    # On tente de supprimer le message de commande pour garder la propreté
+    # Supprime la commande initiale pour propreté
     try:
         await ctx.message.delete()
     except Exception:
         pass
 
-    # On envoie un message vide pour commencer la "rédaction progressive"
+    # Transforme le message pour conserver les retours à la ligne
+    text = message.replace("\\n", "\n")
+
+    # Envoie un message vide pour le construire dynamiquement
     msg = await ctx.send("…")
 
-    # Découpe le texte en blocs
-    words = message.split(" ")
     display = ""
-    step = 5   # Nombre de mots par bloc
-    delay = 0.5  # Délai entre chaque bloc
+    delay = 0.25  # délai entre chaque "bloc" de mots
+    step = 5      # nombre de mots ajoutés à chaque étape
+
+    # Découpe le texte en blocs
+    words = text.split(" ")
 
     for i in range(0, len(words), step):
         display += " ".join(words[i:i + step]) + " "
         await msg.edit(content=display.strip())
         await asyncio.sleep(delay)
 
-    # Petit effet final
-    await asyncio.sleep(1)
-    await msg.edit(content=display.strip() + " ░")
+    # Laisse la dernière version en place (pas de doublon)
+    await asyncio.sleep(0.5)
+    await msg.edit(content=display.strip())
 
 # === Lancement ===
 keep_alive()
